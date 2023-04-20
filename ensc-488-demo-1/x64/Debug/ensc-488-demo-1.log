@@ -1,0 +1,4 @@
+﻿  ProgrammingDemo.cpp
+ProgrammingDemo.obj : error LNK2019: unresolved external symbol "__declspec(dllimport) bool __cdecl MoveToConfiguration(double (&)[4],bool)" (__imp_?MoveToConfiguration@@YA_NAEAY03N_N@Z) referenced in function main
+..\PowerCubeSim.lib : warning LNK4272: library machine type 'x86' conflicts with target machine type 'x64'
+C:\Users\amira\source\repos\ensc-488-demo-1\x64\Debug\ensc-488-demo-1.exe : fatal error LNK1120: 1 unresolved externals

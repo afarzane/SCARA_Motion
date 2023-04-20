@@ -1,0 +1,8 @@
+﻿  ProgrammingDemo.cpp
+C:\Users\amira\source\repos\ensc-488-demo-1\ProgrammingDemo.cpp(117,16): warning C4101: 'x': unreferenced local variable
+C:\Users\amira\source\repos\ensc-488-demo-1\ProgrammingDemo.cpp(177,16): warning C4101: 'error': unreferenced local variable
+C:\Users\amira\source\repos\ensc-488-demo-1\ProgrammingDemo.cpp(444,16): warning C4101: 'error': unreferenced local variable
+  function.cpp
+C:\Users\amira\source\repos\ensc-488-demo-1\function.cpp(769,21): warning C4244: 'argument': conversion from 'double' to 'DWORD', possible loss of data
+  Generating Code...
+C:\Users\amira\source\repos\ensc-488-demo-1\ProgrammingDemo.cpp(415): error C4700: uninitialized local variable 'timef' used
