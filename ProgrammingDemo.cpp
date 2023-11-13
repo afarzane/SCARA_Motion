@@ -1,5 +1,5 @@
 // ProgrammingDemo.cpp : Defines the entry point for the console application.
-//
+// 
 
 #include "stdafx.h"
 #include "function.h"
@@ -10,23 +10,26 @@
 #include <string>
 #include <exception>
 #include <iomanip>
+
 using namespace std;
-//#define resolution 10;
 
 int main(int argc, char* argv[])
 {
+	// ------------- Initialize variables here ------------- //
 	JOINT home;
 	JOINT start_frame;
-	JOINT q_input = { 0, 0, 0, 0 };
+	JOINT q_input = {0,0,0,0};
 	JOINT q_output = { 0,0,0,0 };
 	double fourtuple[4];
 	double Phi;
 	double timef;
+	double* SOLVE_joint;
 	char which_err;
-	//double* q_temp;
-	double** four_tuple = new double* [4];
+	
+	// Initialize matrices for computations
+	double** trans_tuple = new double* [4];
 	for (int i = 0; i < 4; i++) {
-		four_tuple[i] = new double[4];
+		trans_tuple[i] = new double[4];
 	}
 	double** user_tuple = new double* [4];
 	for (int i = 0; i < 4; i++) {
@@ -45,34 +48,32 @@ int main(int argc, char* argv[])
 		traj_tuple[i] = new double[4];
 	}
 
-	double* SOLVE_joint;
-
-	// Set up the user interface
-	printf("Keep this window in focus, and...\n");
+	// ------------- Set up the user interface ------------- //
 	char ch;
 	int c = 1;
 	const int ESC = 27;
-
+	printf("Keep this window in focus, and...\n");
 	printf("Press any key to continue \n");
-	printf("Press ESC to exit \n");
 	ch = _getch();
 
-	bool a = GetConfiguration(home);
+	bool a = GetConfiguration(home); // Determine the home joint
 
+	// ------------- Begin the real-time control of SCARA Robot ------------- //
 	while (1)
 	{
 		if (c != ESC)
 		{
 			// Provide options for user
-			cout << "Press 1 for forward kinematics (joints input)" << endl;
-			cout << "Press 2 for inverse kinematics (X,Y,Z,Phi input)" << endl;
+			cout << "Press 1 for forward kinematics (joints input)" << endl; // Perform forward kinematic calculations
+			cout << "Press 2 for inverse kinematics (X,Y,Z,Phi input)" << endl; // Perform inverse kinematic calculations
 			cout << "Press 3 to return to home position" << endl;
-			cout << "Press 4 to control the gripper" << endl;
-			cout << "Press 5 to stop the robot" << endl;
-			cout << "Press 6 to reset the robot" << endl;
-			cout << "Press 7 to plan a trajectory" << endl;
+			cout << "Press 4 to control the gripper" << endl; // Press once to open, and another to close
+			cout << "Press 5 to stop the robot" << endl; // Emergency stop
+			cout << "Press 6 to reset the robot" << endl; // To reset robot after emergency stop
+			cout << "Press 7 to plan a trajectory" << endl; // Plan a trajectory using provided via points
 			ch = _getch();
 
+			// ------------- Forward Kinematics ------------- //
 			if (ch == '1')
 			{
 
@@ -99,29 +100,30 @@ int main(int argc, char* argv[])
 						throw 3;
 
 					// Find Transformation matrix of tool frame w.r.t. station frame
-					//four_tuple = WHERE(q_input);
-					four_tuple = ForwKin(q_input);
+					trans_tuple = ForwKin(q_input);
 
+					// Print the transformation matrix calculated through ForwKin()
 					printf("The transformation matrix T_ST is: \n");
-					printMatrix(four_tuple);
-					MoveToConfiguration(q_input);
-					//DisplayConfiguration(q_input);
-					Phi = RAD2DEG(acos(four_tuple[0][0]));
-
-					fourtuple[0] = four_tuple[0][3];
-					fourtuple[1] = four_tuple[1][3];
-					fourtuple[2] = four_tuple[2][3];
+					printMatrix(trans_tuple);
+					MoveToConfiguration(q_input); // Move the arm to the given position
+					
+					// Convert the transformation matrix into a four tuple
+					Phi = RAD2DEG(acos(trans_tuple[0][0])); 
+					fourtuple[0] = trans_tuple[0][3];
+					fourtuple[1] = trans_tuple[1][3];
+					fourtuple[2] = trans_tuple[2][3];
 					fourtuple[3] = Phi;
 					cout << "Four tuple is [" << fourtuple[0] << ", " << fourtuple[1] << ", " << fourtuple[2] << ", " << fourtuple[3] << "]" << endl;
 				}
-				catch (int x) {
+				catch (int x) { // Print error message if input exceeds limits
 					printf("Input exceeds limit! Refer to the instruction manual for the joint angle limits.\n");
 				}
 
 
-			}
+			} // ------------- Inverse Kinematics ------------- //
 			else if (ch == '2')
 			{
+				// Boolean variables used for printing error messages based on input (inputs need to be within workspace of robot)
 				bool xbool = false;
 				bool ybool = false;
 				bool zbool = false;
@@ -145,11 +147,11 @@ int main(int argc, char* argv[])
 					}
 					printf("What is your input for Z? ");
 					cin >> q_input[2];
-					//if (q_input[2] > 125 || q_input[2] < 25)
-					//{
-					//	zbool = true;
-					//	throw 6;
-					//}
+					if (q_input[2] > 125 || q_input[2] < 25)
+					{
+						zbool = true;
+						throw 6;
+					}
 					if (sqrt(q_input[0] * q_input[0] + q_input[1] * q_input[1]) > 337 || sqrt(q_input[0] * q_input[0] + q_input[1] * q_input[1] < 53)) {
 						abool = true;
 						throw 7;
@@ -160,8 +162,10 @@ int main(int argc, char* argv[])
 					user_tuple = Joint_To_Tuple(q_input);
 					printMatrix(user_tuple);
 
+					// Solve the inverse kinematic of the inputted user tuple and provide joint angles
 					SOLVE_joint = SOLVE(user_tuple);
-					//SOLVE_joint = SOLVE(four_tuple);
+					
+					// Convert from a double value to JOINT variable, which is what the PowerCubeSim ROS functions require to operate
 					q_output[0] = SOLVE_joint[0];
 					q_output[1] = SOLVE_joint[1];
 					q_output[2] = SOLVE_joint[2];
@@ -171,10 +175,10 @@ int main(int argc, char* argv[])
 						cout << "joint " << i + 1 << ": " << SOLVE_joint[i] << endl;
 					}
 
-					MoveToConfiguration(q_output);
+					MoveToConfiguration(q_output); // Move each joint to their computed angles
 					//DisplayConfiguration(q_output);
 				}
-				catch (int error)
+				catch (int error) // For printing workspace errors
 				{
 					if (xbool == true)
 					{
@@ -203,32 +207,33 @@ int main(int argc, char* argv[])
 				}
 
 
-			}
+			} // ------------- Returning robot to home configuration ------------- //
 			else if (ch == '3')
 			{
 				MoveToConfiguration(home);
 				//DisplayConfiguration(home);
 			}
-			else if (ch == '4') {
+			else if (ch == '4') { // ------------- Robot tool control ------------- //
 				Is_Grasp();
 			}
-			else if (ch == '5') {
+			else if (ch == '5') { // ------------- Emergency stop for robot ------------- //
 				StopRobot();
 			}
-			else if (ch == '6') {
+			else if (ch == '6') { // ------------- Reset robot after emergency and move to home configuration ------------- //
 				ResetRobot();
 				MoveToConfiguration(home);
 				Grasp(false);
 			}
-			else if (ch == '7') {
+			else if (ch == '7') { // ------------- Create a trajectory plan ------------- //
 				bool is_within_workspace = false;
 
+				// Initialize all variables in matrix to 0
 				for (int i = 0; i < 4; i++) {
 					for (int j = 0; j < 4; j++) {
 						traj_frame[i][j] = 0;
 					}
 				}
-
+				
 				for (int i = 0; i < 5; i++) {
 					for (int j = 0; j < 4; j++) {
 						traj_joint[i][j] = 0;
@@ -236,7 +241,7 @@ int main(int argc, char* argv[])
 				}
 
 				try {
-					//ask user to input the local of START, three intermediate, and goal tool frame
+					// Ask user to input the local of START, three intermediate, and goal tool frame
 					cout << "Choose the first intermediate tool frame (X,Y,Z,Phi): " << endl;
 					cin >> traj_frame[0][0] >> traj_frame[0][1] >> traj_frame[0][2] >> traj_frame[0][3];
 					if (sqrt(traj_frame[0][0] * traj_frame[0][0] + traj_frame[0][1] * traj_frame[0][1]) > 337 || sqrt(traj_frame[0][0] * traj_frame[0][0] + traj_frame[0][1] * traj_frame[0][1] < 53)) {
@@ -261,17 +266,16 @@ int main(int argc, char* argv[])
 						is_within_workspace = true;
 						throw 4;
 					}
+					
+					// Time required for trajectory planner to calculate velocity and acceleration of joints, in order to move through all frames
 					cout << "Choose the total time for the manipulator to travel: " << endl;
 					cin >> timef;
-
-					cout << "You have input the following locations: " << endl;
 
 					// For testing
 					/*traj_frame[0][0] = 0;
 					traj_frame[0][1] = 337;
 					traj_frame[0][2] = 100;
 					traj_frame[0][3] = 0;*/
-
 					// Test Case 1
 					/*traj_frame[0][0] = -206;
 					traj_frame[0][1] = 260;
@@ -294,7 +298,6 @@ int main(int argc, char* argv[])
 					traj_frame[3][3] = 110;
 
 					timef = 10;*/
-
 					// Test case 2
 					/*traj_frame[0][0] = -206;
 					traj_frame[0][1] = 260;
@@ -318,7 +321,6 @@ int main(int argc, char* argv[])
 
 					timef = 0.1;
 					timef = 1.7;*/
-
 					// Test case 3
 					/*traj_frame[0][0] = -206;
 					traj_frame[0][1] = 260;
@@ -341,7 +343,6 @@ int main(int argc, char* argv[])
 					traj_frame[3][3] = 110;
 
 					timef = 5;*/
-
 					// Test case 4
 					/*traj_frame[0][0] = 337;
 					traj_frame[0][1] = 0;
@@ -364,7 +365,6 @@ int main(int argc, char* argv[])
 					traj_frame[3][3] = 0;
 
 					timef = 20;*/
-
 					// Test case 5
 					/*traj_frame[0][0] = -115;
 					traj_frame[0][1] = 316;
@@ -409,16 +409,15 @@ int main(int argc, char* argv[])
 
 					timef = 15;*/
 
-					//funciton to check the workspace for each tool frame, function writen but do this later
-					//is_within_workspace = Check_Workspace(traj_frame[0][0], traj_frame[0][1], traj_frame[0][2], traj_frame[0][3]);
-
+					cout << "You have input the following locations: " << endl;
 					cout << "x" << setw(4) << "y" << setw(4) << "z" << setw(4) << "phi" << setw(4) << "time (s)" << timef << endl;
-					//displace our input for each tool frame in a 5 by 5 matrix
+					
+					// Print the 5x5 matrix 
 					printMatrix(traj_frame);
-
+					// Export matrix for analysis
 					export_csv(traj_frame);
 
-					//Use inverse kin to conver from cartesian to joints and print the joints for each tool frame
+					// Use inverse kin to convert from cartesian to joints and print the joints for each tool frame
 					for (int i = 0; i < 5; i++) {
 						if (i != 0) {
 							traj_frame[i - 1][3] = DEG2RAD(traj_frame[i - 1][3]);
@@ -435,13 +434,13 @@ int main(int argc, char* argv[])
 					printMatrix5(traj_joint);
 
 
-					//Perform Trajectory Path
+					// Perform Trajectory Path
 					Trajectory_Planner(traj_joint, timef);
 
+					// Reset robot to home/idle conditions
 					ResetRobot();
 				}
-
-				catch (int error) {
+				catch (int error) { // If a given frame is out of workspace, then let the user know
 					if (is_within_workspace == true) {
 						cout << "It is out of the worksapce" << endl;
 						is_within_workspace = false;
@@ -449,10 +448,6 @@ int main(int argc, char* argv[])
 					}
 				}
 			}
-
-
-
-
 
 			printf("Press any key to continue \n");
 			printf("Press ESC to exit \n");

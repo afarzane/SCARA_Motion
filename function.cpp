@@ -26,6 +26,7 @@ double station_angle = 0;
 static bool Check_joint_limit(double* joint);
 static double Correct_Angle(double angle);
 
+// ------------- Forward Kinematics ------------- //
 double** ForwKin(double* q) {
 	 //Inverse Base wrt Station
 	double** invT_BS = new double* [4];
@@ -63,7 +64,7 @@ double** WHERE(double* q, double** invT_BS)
 		T_ST[i] = new double[4];
 	}
 
-	double** T_BT = KIN(q);
+	double** T_BT = Transform(q);
 
 	for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < 4; j++) {
@@ -79,7 +80,7 @@ double** WHERE(double* q, double** invT_BS)
 
 }
 
-double** KIN(double* q)
+double** Transform(double* q)
 {
 	double theta2 = DEG2RAD(q[0]);
 	double theta3 = DEG2RAD(q[1]);

@@ -3,7 +3,7 @@
 
 double** ForwKin(double* q);
 double** WHERE(double* q, double** invT_BS);
-double** KIN(double* q);
+double** Transform(double* q);
 
 double* SOLVE(double** matrix);
 void Is_Grasp(void);
